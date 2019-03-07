@@ -33,14 +33,23 @@ Payton Jellison
 >> A2: Briefly describe how you implemented argument parsing.  How do
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
+	When we run the setup_stack() method it will call the additional function setup_stack_helper() which will then
+	call strtok_r. Then all of the token inputs are put into an array and the argc is incremented. These tokens are
+	pushed onto the stack along with the pointer starting at argc-1 and going to 0. The input is also limited so that 
+	the stack can not be overflowed. 
+
 
 ---- RATIONALE ----
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
+	strtok_r can be called from multiple threads without causing undefined behavior 
+	and also parse multiple strings at once
 
 >> A4: In Pintos, the kernel separates commands into an executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
+	With the Unix approach less unnecessary work is done in the kernel, and does 
+	better at error handling at user level
 
 			     SYSTEM CALLS
 			     ============
@@ -60,12 +69,19 @@ Payton Jellison
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
+	We take the list of arguments and make sure that the buffer is not invalid. Then the pointer to the file is 
+	taken in. We then make sure that file descriptor points to the valid file and checks that permissions are right. 
+	It then  obtains a lock, and writes to the file assuming that all the checks passed. 
+
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
 >> and the greatest possible number of inspections of the page table
 >> (e.g. calls to pagedir_get_page()) that might result?  What about
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
+	
+	
+	
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
@@ -90,6 +106,7 @@ Payton Jellison
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+		
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
