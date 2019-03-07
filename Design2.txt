@@ -80,11 +80,16 @@ Payton Jellison
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 	
-	
-	
+	If the size of data is all contained in one page then it would call pagedir_get_page once, but if it is covering
+	two pages it will have to call pagedir_get_page twice. There isn't much room for improvement because a call of
+	2 bytes has the same result as 4096 bytes.
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+	Wait looks at list of child processes and will use locks and semaphores to wait for children to finish until 
+	none are needing to be waited on. Process termination will go through the children and set whether to wait 
+	or not. 
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -100,6 +105,11 @@ Payton Jellison
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+	Each function and all levels are responsible for the resources they control. This way if there is an error
+	within the function it can make sure everything gets cleaned up, clean all resources and return the error
+	code so functions above it can repeat the process. This way if an error could happen to other programs it will
+	be handled.
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
@@ -107,6 +117,8 @@ Payton Jellison
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 		
+	The exec system call needs a new child process mades and then it will attempt to load the new process.
+	If successful set the load_status variable to true 0 or false -1. After return we load status of the struct.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -114,6 +126,12 @@ Payton Jellison
 >> that all resources are freed in each case?  How about when P
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
+
+	Creating a process adds C to a child process of P and P to a parent list of C.
+	This makes sure that if the child runs and completes the parent knows that it is terminated
+	and does not have to wait, but if not it knows it does need to wait
+	If the parent terminates before child. the parent pointer on child will be set to null
+	Both of these ensure race conditions will not do anything bad. 
 
 ---- RATIONALE ----
 
