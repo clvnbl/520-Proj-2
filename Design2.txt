@@ -5,9 +5,6 @@
 		           +--------------------------+
 
 ---- GROUP ----
-
->> Fill in the names of your group members.
-
 Calvin Bailey
 Hunter Guthrie
 Payton Jellison
