@@ -18,6 +18,26 @@ Payton Jellison
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+Data structures for both (Decide which is for argument and which is for user programs)!!!!!!
+
+Project.c
+char *save_ptr and file_name in process_execute() used to get the parsed file name and store both its name and pointer
+char *save_ptr and file_name in start_process() used to get the actual file name from first parsed token and store name and pointer
+WORD_SIZE constant set to 4 used in the setup_stack function 
+DEFAULT_ARGV set to 2 used in the setup_stack function
+token set to *esp used to push argv then decrement the *esp pointer
+
+Syscall.c
+MAX_ARGS constant set to 3 
+USER_VADDR_BOTTOM set to ((void *) 0x08048000)
+struct process_file used to hold a file pointer, int fd, and a list_elem struct 
+
+thread.c
+
+t-> parent = thread_tid() added in thread_create() used to hold the parent of the current thread
+struct child_process used to hold the struct value of the child process from the parent
+
+
 			   ARGUMENT PASSING
 			   ================
 
@@ -26,6 +46,7 @@ Payton Jellison
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
 
 
 ---- ALGORITHMS ----
