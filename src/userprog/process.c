@@ -1,7 +1,7 @@
 /*
  * All modified code was inspired from ryantimwilson's git repo, which can be found here:
  * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/process.c
- *
+ *  0df
  */
 
 #include "userprog/process.h"
@@ -658,17 +658,16 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
   //creating a new file_ch.
   char *file_ch;
   
-  //new argv set to the size of 2 * char 
+  //new argv array set to the size of 2 * char 
   char **argv = malloc(2*sizeof(char *));
   
-  //int i; 
   //creating argc and setting it equal to 0
   int argc = 0; 
   
   //setting argv_size to 2
   int argv_size = 2;
 
-  //looping through the file name and pushing it onto the stack
+  //looping through the file name/arguments and pushing it onto the stack
   for(file_ch = (char *) file_name; file_ch != NULL; file_ch = strtok_r (NULL, " ", save_ptr))
   {
 	  *esp -= strlen(file_ch)+1;
@@ -681,6 +680,8 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
 		  argv_size *= 2;
 		  argv = realloc(argv,argv_size*sizeof(char *));
 	  }
+
+	  //pushes the file_ch onto the stack. AKA, the arguments
 	  memcpy(*esp,file_ch,strlen(file_ch)+1);
   }
   
@@ -725,10 +726,6 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
 
   //returns success
   return success;
-
-
-
-
 
 }
 

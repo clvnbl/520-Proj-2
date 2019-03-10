@@ -558,10 +558,9 @@ struct file* process_get_file (int fd)
 	struct thread *thread = thread_current();
 	
 	//creates a new list of elements
-	struct list_elem *e;
 
 	//loops through the file list in the current thread
-	for (e = list_begin (&thread->file_list); e != list_end (&thread->file_list);e = list_next (e))
+	for (struct list_elem *e = list_begin (&thread->file_list); e != list_end (&thread->file_list);e = list_next (e))
 	{
 		//creates a new process file and sets it equal to the current process file in the list
 		struct process_file *pf = list_entry (e, struct process_file, elem);
@@ -653,10 +652,10 @@ struct child_process* get_child_process (int pid)
     struct thread *thread = thread_current();
     
 	//creates a new list of elements
-	struct list_elem *e;
+	//struct list_elem *e;
 
 	//loops through the child list of the current thread
-	for (e = list_begin (&thread->child_list); e != list_end (&thread->child_list);e = list_next (e))
+	for (struct list_elem *e = list_begin (&thread->child_list); e != list_end (&thread->child_list);e = list_next (e))
     {
 		//creates a new child process that is set to the child process in the list
         struct child_process *cp = list_entry (e, struct child_process, elem);
@@ -688,7 +687,8 @@ void remove_child_processes (void)
 	struct thread *thread = thread_current();
 	
 	//creates a new list of elements
-    struct list_elem *next_e, *e = list_begin(&thread->child_list);
+	struct list_elem *next_e;
+	struct list_elem *e = list_begin(&thread->child_list);
 	
 	//loops through the list of child processes in the current thread
 	while (e != list_end (&thread->child_list))
