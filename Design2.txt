@@ -50,6 +50,21 @@ struct child_process used to hold the struct value of the child process from the
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+	process_execute
+		save_ptr and file_name - used to get the parsed file name and store both its name and pointer
+		
+	start_process
+		save_ptr and file_name - used to get the parsed file name and store both its name and pointer
+		thread_current()->cp->load - a value will be set to load that will signify if a load is successful or a failure
+		
+	process_wait
+		struct child_process* child_p - this is a new struct of a child process set to the child process with the child_tid that was brought into the method values will be modified
+		
+	process_exit
+		no new structs created, only used the existing struct
+		
+	
+		
 
 
 

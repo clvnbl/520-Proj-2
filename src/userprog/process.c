@@ -68,10 +68,16 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  
+  
+  
+  /*new code*/
   // Get parsed file name
   char *save_ptr;
   file_name = strtok_r((char *) file_name, " ", &save_ptr);
 
+  
+  
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
@@ -354,8 +360,6 @@ struct Elf32_Phdr
 
 //static bool setup_stack (void **esp);
 /*new code*/
-//#define WORD_SIZE 4
-//#define DEFAULT_ARGV 2
 static bool setup_stack (void **esp, const char* file_name, char** save_ptr);
 
 
