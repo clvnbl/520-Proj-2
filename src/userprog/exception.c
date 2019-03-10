@@ -1,3 +1,9 @@
+/*
+ * All modified code was inspired from ryantimwilson's git repo, which can be found here:
+ * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/exception.c
+ *
+ */
+
 #include "userprog/exception.h"
 #include <inttypes.h>
 #include <stdio.h>
@@ -101,8 +107,9 @@ kill (struct intr_frame *f)
       
       
       
-      //look into this solution has exit(-1) instead
+      /*new code*/
       //thread_exit ();
+	  //
        exit(-1);
 
 

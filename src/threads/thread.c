@@ -1,3 +1,9 @@
+/*
+ * All modified code was inspired from ryantimwilson's git repo, which can be found here:
+ * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/threads/thread.c
+ *
+ */
+
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -30,25 +36,6 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
-
-
-
-
-
-/*new code*/
-#define MIN_FD 2
-#define NO_PARENT -1
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* List of processes in THREAD_READY state, that is, processes
@@ -204,14 +191,6 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
 
-
-
-  /*new code*/
-  enum intr_level old_level;
-
-
-
-
   ASSERT (function != NULL);
 
   /* Allocate thread. */
@@ -229,8 +208,9 @@ thread_create (const char *name, int priority,
 
 
 
- /*new code*/
-  old_level = intr_disable ();
+  /*new code*/
+  //disables interrupts
+   //enum intr_level old_level = intr_disable ();
 
 
 
@@ -257,10 +237,16 @@ thread_create (const char *name, int priority,
 
 
   /*new code*/
-  intr_set_level (old_level);
+  // enables interrupts
+  //intr_set_level (old_level);
 
+  //sets the parent value equal to the thread tid
   t->parent = thread_tid();
-  struct child_process *cp = add_child_process(t->tid);
+  
+  //creates a new child process 
+  struct child_process *cp = initilize_child_process(t->tid);
+  
+  //sets the child process value equal to the newly created child process
   t->cp = cp;
 
 
@@ -546,12 +532,18 @@ init_thread (struct thread *t, const char *name, int priority)
 
 
   /*new code*/
+  //initialize the file and child lists
   list_init(&t->file_list);
-  t->fd = MIN_FD;
-
   list_init(&t->child_list);
+  
+  //sets the file descriptor to 2, or the min fd
+  t->fd = 2;
+  
+  //sets the child process to null since the new thread does not have a thread
   t->cp = NULL;
-  t->parent = NO_PARENT;
+  
+  //sets the parent to -1, or does not have a parent
+  t->parent = -1;
 
 
 
@@ -686,17 +678,24 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 /*new code*/
+//bool method to see if a thread is alive or not
 bool thread_alive (int pid)
 {
+	//new list of elements
 	struct list_elem *e;
 
+	//loops around the entire list of threads
 	for(e = list_begin (&all_list); e != list_end(&all_list); e = list_next(e))
 	{
+		//gets the thread in the current entry in the list
 		struct thread *t = list_entry (e, struct thread, allelem);
-		if(t->tid ==pid)
+		
+		//checks to see if the tid of the thread is equal to the pid that was brought in. If it is, set it to true. This means the thread is alive
+		if(t->tid == pid)
 		{
 			return true;
 		}
 	}
+	//returns false meaning the thread is dead.
 	return false;
 }

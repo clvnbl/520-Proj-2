@@ -18,9 +18,12 @@ Payton Jellison
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+	we used the repo from ryan tim wilson for insperation for all of the code used. Here is the link to his repo
+	https://github.com/ryantimwilson/Pintos-Project-2
+
 Data structures for both (Decide which is for argument and which is for user programs)!!!!!!
 
-Project.c
+process.c
 char *save_ptr and file_name in process_execute() used to get the parsed file name and store both its name and pointer
 char *save_ptr and file_name in start_process() used to get the actual file name from first parsed token and store name and pointer
 WORD_SIZE constant set to 4 used in the setup_stack function 
@@ -46,6 +49,7 @@ struct child_process used to hold the struct value of the child process from the
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
 
 
 
@@ -138,7 +142,7 @@ struct child_process used to hold the struct value of the child process from the
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 		
-	The exec system call needs a new child process mades and then it will attempt to load the new process.
+	The exec system call needs a new child process made and then it will attempt to load the new process.
 	If successful set the load_status variable to true 0 or false -1. After return we load status of the struct.
 
 >> B8: Consider parent process P with child process C.  How do you

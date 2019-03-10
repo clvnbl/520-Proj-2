@@ -1,3 +1,9 @@
+/*
+ * All modified code was inspired from ryantimwilson's git repo, which can be found here:
+ * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/threads/thread.h
+ *
+ */
+
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 
@@ -11,6 +17,7 @@
 
 
 /*new code*/
+//included the syscall.h file
 #include "userprog/syscall.h"
 
 
@@ -121,12 +128,21 @@ struct thread
   
   
   
- /*new code for process.c*/ 
-  struct child_process* cp;
-  struct list child_list; 
-  tid_t parent;
-  struct list file_list;
-  int fd;
+    /*new code*/
+	//creating a new child process struct for the thread (why we need syscall.h)
+    struct child_process* cp;
+	
+	//new list for the child processes
+    struct list child_list; 
+	
+	//tid for the parent process
+    tid_t parent;
+	
+	//list for the user files 
+    struct list file_list;
+	
+	//file descriptor. Holds if a file can be opened or not
+    int fd;
   
   
   };

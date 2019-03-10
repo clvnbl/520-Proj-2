@@ -1,3 +1,9 @@
+/*
+ * All modified code was inspired from ryantimwilson's git repo, which can be found here:
+ * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/process.c
+ *
+ */
+
 #include "userprog/process.h"
 #include <debug.h>
 #include <inttypes.h>
@@ -19,6 +25,7 @@
 #include "threads/vaddr.h"
 
 /*new code*/
+//needing the files syscall.h and malloc.h
 #include "userprog/syscall.h"
 #include "threads/malloc.h"
 
@@ -88,6 +95,7 @@ start_process (void *file_name_)
 
 
   /*new code*/
+  //gets the file name and parses it
   char *save_ptr;
   file_name = strtok_r(file_name, " ", &save_ptr);
 
@@ -117,15 +125,18 @@ start_process (void *file_name_)
 
 
  /*new code*/
+ //will try and load in the file. A bool is returned if it was able to or not
  success = load (file_name, &if_.eip, &if_.esp, &save_ptr); 
-  if(success)
-  {
-	  thread_current()->cp->load = LOAD_SUCCESS;
-  }
-  else
-  {
-	  thread_current()->cp->load = LOAD_FAIL;
-  }
+ 
+ //if bool is true, set the current thread child process load to LOAD_SUCCESS, other wise, set it to LOAD_FAIL
+ if(success)
+ {
+  thread_current()->cp->load = LOAD_SUCCESS;
+ }
+ else
+ {
+  thread_current()->cp->load = LOAD_FAIL;
+ }
 
 
 
@@ -166,31 +177,40 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  
 	
 	
 	
 	
 	
+	/*this method is all new code*/
+	//grabs the child process at the child_tid
+	struct child_process* child_p = get_child_process(child_tid);
 	
-	
-	/*this method is nothing but new code*/
-	struct child_process* cp = get_child_process(child_tid);
-	if(!cp)
+	//if there is no child process, or the child process wait has is true, throw an error
+	//otherwise, set the wait value to true
+	if(!child_p || child_p->wait)
 	{
 		return ERROR;
 	}
-	if(cp->wait)
+	else
 	{
-		return ERROR;
+		child_p->wait = true;
 	}
-	cp->wait = true;
-	while(!cp->exit)
+	
+	//traps any child process 
+	while(!child_p->exit)
 	{
+		//barrier() is a function that sets every thread to wait before continuing alongside every other thread
 		barrier();
 	}
-	int status = cp->status;
-	remove_child_process(cp);
+	
+	//sets the status equal to the child process status
+	int status = child_p->status;
+	
+	//removes the child processes
+	remove_child_process(child_p);
+	
+	//returns the status of the child process
 	return status; 
 }
 
@@ -206,9 +226,13 @@ process_exit (void)
 
 
   /*new code*/
-  process_close_file(CLOSE_ALL);
+  //Close all files opened by process
+  process_close_file(-1);
+  
+  //removes the child processes
   remove_child_processes();
 
+  // Set exit value to true in case killed by the kernel
   if(thread_alive(cur->parent))
   {
 	  cur->cp->exit = true;
@@ -330,8 +354,8 @@ struct Elf32_Phdr
 
 //static bool setup_stack (void **esp);
 /*new code*/
-#define WORD_SIZE 4
-#define DEFAULT_ARGV 2
+//#define WORD_SIZE 4
+//#define DEFAULT_ARGV 2
 static bool setup_stack (void **esp, const char* file_name, char** save_ptr);
 
 
@@ -358,10 +382,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 
 /*new code*/
-bool
-load (const char *file_name, void (**eip) (void), void **esp, char **save_ptr)
-
-
+//added more parameters 
+bool load (const char *file_name, void (**eip) (void), void **esp, char **save_ptr)
 
 
 
@@ -468,6 +490,7 @@ load (const char *file_name, void (**eip) (void), void **esp, char **save_ptr)
 
 
   /*new code*/
+  //tries to setup the stack. If it can not, it goes to done
   if(!setup_stack (esp, file_name, save_ptr))
     goto done;
 
@@ -622,49 +645,81 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
     }
   //return success;
 
+  
+  
+  
 
  
   /*new code*/
-  char *token;
-  char **argv = malloc(DEFAULT_ARGV*sizeof(char *));
-  int i, argc = 0, argv_size = DEFAULT_ARGV;
+  //creating a new file_ch.
+  char *file_ch;
+  
+  //new argv set to the size of 2 * char 
+  char **argv = malloc(2*sizeof(char *));
+  
+  //int i; 
+  //creating argc and setting it equal to 0
+  int argc = 0; 
+  
+  //setting argv_size to 2
+  int argv_size = 2;
 
-  for(token = (char *) file_name; token != NULL; token = strtok_r (NULL, " ", save_ptr))
+  //looping through the file name and pushing it onto the stack
+  for(file_ch = (char *) file_name; file_ch != NULL; file_ch = strtok_r (NULL, " ", save_ptr))
   {
-	  *esp -= strlen(token)+1;
+	  *esp -= strlen(file_ch)+1;
 	  argv[argc] = *esp;
 	  argc++;
+	  
+	  //resizing the argv
 	  if(argc >= argv_size)
 	  {
 		  argv_size *= 2;
 		  argv = realloc(argv,argv_size*sizeof(char *));
 	  }
-	  memcpy(*esp,token,strlen(token)+1);
+	  memcpy(*esp,file_ch,strlen(file_ch)+1);
   }
+  
+  //resetting argv to 0
   argv[argc] = 0;
 
-  i = (size_t) *esp % WORD_SIZE;
-  if(i)
+  //setting count equal to the word size on the stack. aka align to word size
+  int count = (size_t) *esp % 4;
+  
+  //seeing if count if true. If it is, subtract the size of count from the esp and pushes argv onto the stack
+  // Push argv[i] for all i
+  if(count)
   {
-	  *esp -= i;
-	  memcpy(*esp, &argv[argc], i);
+	  *esp -= count;
+	  memcpy(*esp, &argv[argc], count);
   }
-  for(i = argc; i>=0; i--)
+  
+  //loops through count to push argv[count] onto the stack
+  for(count = argc; count >= 0; count--)
   {
 	  *esp -= sizeof(char *);
-	  memcpy(*esp, &argv[i], sizeof(char *));
+	  memcpy(*esp, &argv[count], sizeof(char *));
   }
-  token = *esp;
+  
+  //setting the file_ch to the esp for safe keeping
+  file_ch = *esp;
+  
+  //subtracts the size of a char double pointer from the esp, and pushes the file_ch onto the stack
   *esp -= sizeof(char **);
-  memcpy(*esp, &token, sizeof(char **));
+  memcpy(*esp, &file_ch, sizeof(char **));
 
+  //subtracts the size of an int from the esp, and pushes argc onto the stack
   *esp -= sizeof(int);
   memcpy(*esp, &argc, sizeof(int));
 
+  //subtracts the size of a void pointer from esp, and then pushes argv[argc] onto the stack
   *esp -= sizeof(void *);
   memcpy(*esp, &argv[argc], sizeof(void *));
+  
+  //frees argv
   free(argv);
 
+  //returns success
   return success;
 
 
