@@ -1,3 +1,9 @@
+/*
+ * All modified code was inspired from ryantimwilson's git repo, which can be found here:
+ * https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/process.c
+ *  0df
+ */
+
 #include "userprog/process.h"
 #include <debug.h>
 #include <inttypes.h>
@@ -18,8 +24,32 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
+/*new code*/
+//needing the files syscall.h and malloc.h
+#include "userprog/syscall.h"
+#include "threads/malloc.h"
+
+
+
+
+
+
+
 static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+
+
+
+//static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+/*new code*/
+static bool load (const char *cmdline, void (**eip) (void), void **esp, char** save_ptr);
+
+
+
+
+
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -38,10 +68,20 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  
+  
+  
+  /*new code*/
+  // Get parsed file name
+  char *save_ptr;
+  file_name = strtok_r((char *) file_name, " ", &save_ptr);
+
+  
+  
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
   return tid;
 }
 
@@ -54,12 +94,67 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
+
+
+
+
+
+
+  /*new code*/
+  //gets the file name and parses it
+  char *save_ptr;
+  file_name = strtok_r(file_name, " ", &save_ptr);
+
+
+
+
+
+
+
+
+
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  
+  
+  
+  
+  //success = load (file_name, &if_.eip, &if_.esp);
+
+
+
+
+
+
+
+ /*new code*/
+ //will try and load in the file. A bool is returned if it was able to or not
+ success = load (file_name, &if_.eip, &if_.esp, &save_ptr); 
+ 
+ //if bool is true, set the current thread child process load to LOAD_SUCCESS, other wise, set it to LOAD_FAIL
+ if(success)
+ {
+  thread_current()->cp->load = LOAD_SUCCESS;
+ }
+ else
+ {
+  thread_current()->cp->load = LOAD_FAIL;
+ }
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -88,7 +183,41 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+	
+	
+	
+	
+	
+	/*this method is all new code*/
+	//grabs the child process at the child_tid
+	struct child_process* child_p = get_child_process(child_tid);
+	
+	//if there is no child process, or the child process wait has is true, throw an error
+	//otherwise, set the wait value to true
+	if(!child_p || child_p->wait)
+	{
+		return ERROR;
+	}
+	else
+	{
+		child_p->wait = true;
+	}
+	
+	//traps any child process 
+	while(!child_p->exit)
+	{
+		//barrier() is a function that sets every thread to wait before continuing alongside every other thread
+		barrier();
+	}
+	
+	//sets the status equal to the child process status
+	int status = child_p->status;
+	
+	//removes the child processes
+	remove_child_process(child_p);
+	
+	//returns the status of the child process
+	return status; 
 }
 
 /* Free the current process's resources. */
@@ -97,6 +226,32 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+
+
+
+
+  /*new code*/
+  //Close all files opened by process
+  process_close_file(-1);
+  
+  //removes the child processes
+  remove_child_processes();
+
+  // Set exit value to true in case killed by the kernel
+  if(thread_alive(cur->parent))
+  {
+	  cur->cp->exit = true;
+  }
+
+
+
+
+
+
+
+
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -195,7 +350,27 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+
+
+
+
+
+
+
+
+//static bool setup_stack (void **esp);
+/*new code*/
+static bool setup_stack (void **esp, const char* file_name, char** save_ptr);
+
+
+
+
+
+
+
+
+
+
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -205,8 +380,17 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    Stores the executable's entry point into *EIP
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
-bool
-load (const char *file_name, void (**eip) (void), void **esp) 
+//bool
+//load (const char *file_name, void (**eip) (void), void **esp) 
+
+
+
+/*new code*/
+//added more parameters 
+bool load (const char *file_name, void (**eip) (void), void **esp, char **save_ptr)
+
+
+
 {
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
@@ -302,8 +486,23 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  //if (!setup_stack (esp))
+    
+
+
+
+
+
+  /*new code*/
+  //tries to setup the stack. If it can not, it goes to done
+  if(!setup_stack (esp, file_name, save_ptr))
     goto done;
+
+
+
+
+
+
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -427,7 +626,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+setup_stack (void **esp, const char* file_name, char** save_ptr) 
 {
   uint8_t *kpage;
   bool success = false;
@@ -439,9 +638,95 @@ setup_stack (void **esp)
       if (success)
         *esp = PHYS_BASE;
       else
+      {
         palloc_free_page (kpage);
+
+
+
+      /*new code*/
+      return success;
+      }
     }
+  //return success;
+
+  
+  
+  
+
+ 
+  /*new code*/
+  //creating a new file_ch.
+  char *file_ch;
+  
+  //new argv array set to the size of 2 * char 
+  char **argv = malloc(2*sizeof(char *));
+  
+  //creating argc and setting it equal to 0
+  int argc = 0; 
+  
+  //setting argv_size to 2
+  int argv_size = 2;
+
+  //looping through the file name/arguments and pushing it onto the stack
+  for(file_ch = (char *) file_name; file_ch != NULL; file_ch = strtok_r (NULL, " ", save_ptr))
+  {
+	  *esp -= strlen(file_ch)+1;
+	  argv[argc] = *esp;
+	  argc++;
+	  
+	  //resizing the argv
+	  if(argc >= argv_size)
+	  {
+		  argv_size *= 2;
+		  argv = realloc(argv,argv_size*sizeof(char *));
+	  }
+
+	  //pushes the file_ch onto the stack. AKA, the arguments
+	  memcpy(*esp,file_ch,strlen(file_ch)+1);
+  }
+  
+  //resetting argv to 0
+  argv[argc] = 0;
+
+  //setting count equal to the word size on the stack. aka align to word size
+  int count = (size_t) *esp % 4;
+  
+  //seeing if count if true. If it is, subtract the size of count from the esp and pushes argv onto the stack
+  // Push argv[i] for all i
+  if(count)
+  {
+	  *esp -= count;
+	  memcpy(*esp, &argv[argc], count);
+  }
+  
+  //loops through count to push argv[count] onto the stack
+  for(count = argc; count >= 0; count--)
+  {
+	  *esp -= sizeof(char *);
+	  memcpy(*esp, &argv[count], sizeof(char *));
+  }
+  
+  //setting the file_ch to the esp for safe keeping
+  file_ch = *esp;
+  
+  //subtracts the size of a char double pointer from the esp, and pushes the file_ch onto the stack
+  *esp -= sizeof(char **);
+  memcpy(*esp, &file_ch, sizeof(char **));
+
+  //subtracts the size of an int from the esp, and pushes argc onto the stack
+  *esp -= sizeof(int);
+  memcpy(*esp, &argc, sizeof(int));
+
+  //subtracts the size of a void pointer from esp, and then pushes argv[argc] onto the stack
+  *esp -= sizeof(void *);
+  memcpy(*esp, &argv[argc], sizeof(void *));
+  
+  //frees argv
+  free(argv);
+
+  //returns success
   return success;
+
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
